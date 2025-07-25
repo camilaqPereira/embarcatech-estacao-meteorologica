@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Estação Meteorológica</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #338e6b;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 800px;
+            margin: auto;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .data-panel {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 30px;
+            gap: 16px;
+        }
+
+        .data-box {
+            background: #e2e2e1;
+            padding: 16px;
+            border-radius: 6px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .data-box h2 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .data-value {
+            font-size: 2em;
+            color: #338e6b;
+        }
+
+        .charts-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-box {
+            background: #e2e2e1;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .cards-panel {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #e2e2e1;
+            border-radius: 6px;
+            padding: 16px;
+            flex: 1;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .card-content {
+            font-size: 1.1em;
+        }
+
+        .forms-panel {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        form {
+            background: #e2e2e1;
+            padding: 14px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            min-width: 280px;
+            flex: 1;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        form h3 {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-top: 8px;
+            margin-bottom: 4px;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 4px;
+        }
+
+        input[type="submit"] {
+            margin-top: 12px;
+            padding: 7px 14px;
+            background: #338e6b;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 480px) {
+
+            .data-panel,
+            .cards-panel {
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Estação Meteorológica</h1>
+        <div class="data-panel">
+            <div class="data-box">
+                <h2>Status</h2>
+                <span class="data-value" id="statusValue">--</span>
+            </div>
+        </div>
+        <div class="data-panel">
+            <div class="data-box">
+                <h2>Temperatura</h2>
+                <span class="data-value" id="tempValue">-- °C</span>
+            </div>
+            <div class="data-box">
+                <h2>Umidade</h2>
+                <span class="data-value" id="humValue">-- %</span>
+            </div>
+            <div class="data-box">
+                <h2>Altitude</h2>
+                <span class="data-value" id="altValue">-- m</span>
+            </div>
+        </div>
+        <div class="charts-col">
+            <div class="chart-box">
+                <canvas id="tempChart" height="150"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="humChart" height="150"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="altChart" height="150"></canvas>
+            </div>
+        </div>
+        <div class="cards-panel">
+            <div class="card">
+                <div class="card-title">Limites de Temperatura</div>
+                <div class="card-content">
+                    Mínimo: <span id="cardTempMin">--</span> °C<br>
+                    Máximo: <span id="cardTempMax">--</span> °C
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Limites de Umidade</div>
+                <div class="card-content">
+                    Mínimo: <span id="cardHumMin">--</span> %<br>
+                    Máximo: <span id="cardHumMax">--</span> %
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Offset de Temperatura</div>
+                <div class="card-content">
+                    <span id="cardTempOffset">--</span> °C
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">Offset de Umidade</div>
+                <div class="card-content">
+                    <span id="cardHumOffset">--</span> %
+                </div>
+            </div>
+        </div>
+        <div class="forms-panel">
+            <form id="formTempLim">
+                <h3>Definir Limites de Temperatura</h3>
+                <label for="tempMin">Mínimo (°C):</label>
+                <input type="number" id="tempMin" name="tempMin" value="20">
+                <label for="tempMax">Máximo (°C):</label>
+                <input type="number" id="tempMax" name="tempMax" value="30">
+                <input type="submit" value="Salvar">
+            </form>
+            <form id="formHumLim">
+                <h3>Definir Limites de Umidade</h3>
+                <label for="humMin">Mínimo (%):</label>
+                <input type="number" id="humMin" name="humMin" step="0.1" value="40">
+                <label for="humMax">Máximo (%):</label>
+                <input type="number" id="humMax" name="humMax" step="0.1" value="70">
+                <input type="submit" value="Salvar">
+            </form>
+            <form id="formTempOffset">
+                <h3>Ajustar Offset de Temperatura</h3>
+                <label for="tempOffset">Offset (°C):</label>
+                <input type="number" id="tempOffset" name="tempOffset" step="0.1" value="0">
+                <input type="submit" value="Salvar">
+            </form>
+            <form id="formHumOffset">
+                <h3>Ajustar Offset de Umidade</h3>
+                <label for="humOffset">Offset (%):</label>
+                <input type="number" id="humOffset" name="humOffset" step="0.1" value="0">
+                <input type="submit" value="Salvar">
+            </form>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let tempData = [];
+            let humData = [];
+            let altData = [];
+            const tempCtx = document.getElementById('tempChart').getContext('2d');
+            const humCtx = document.getElementById('humChart').getContext('2d');
+            const altCtx = document.getElementById('altChart').getContext('2d');
+            const tempChart = new Chart(tempCtx, {
+                type: 'line',
+                data: {
+                    labels: tempData.map(() => ""),
+                    datasets: [{
+                        label: 'Temperatura',
+                        data: tempData,
+                        borderColor: '#338e6b',
+                        backgroundColor: '#338e6b',
+                        pointBackgroundColor: '#338e6b',
+                        pointRadius: 2,
+                        fill: false
+                    }]
+                }
+            });
+            const humChart = new Chart(humCtx, {
+                type: 'line',
+                data: {
+                    labels: humData.map(() => ""),
+                    datasets: [{
+                        label: 'Umidade',
+                        data: humData,
+                        borderColor: '#338e6b',
+                        backgroundColor: '#338e6b',
+                        pointBackgroundColor: '#338e6b',
+                        pointRadius: 2,
+                        fill: false
+                    }]
+                }
+            });
+            const altChart = new Chart(altCtx, {
+                type: 'line',
+                data: {
+                    labels: altData.map(() => ""),
+                    datasets: [{
+                        label: 'Altitude',
+                        data: altData,
+                        borderColor: '#338e6b',
+                        backgroundColor: '#338e6b',
+                        pointBackgroundColor: '#338e6b',
+                        pointRadius: 2,
+                        fill: false
+                    }]
+                }
+            });
+
+            function updateData() {
+                fetch('/station/state')
+                    .then(res => res.json())
+                    .then(state => {
+                        document.getElementById('tempValue').innerText = state.temp + " °C";
+                        document.getElementById('humValue').innerText = state.hum + " %";
+                        document.getElementById('altValue').innerText = state.alt + " m";
+                        document.getElementById('cardTempMin').innerText = state.temp_min;
+                        document.getElementById('cardTempMax').innerText = state.temp_max;
+                        document.getElementById('cardHumMin').innerText = state.hum_min;
+                        document.getElementById('cardHumMax').innerText = state.hum_max;
+                        document.getElementById('cardTempOffset').innerText = state.temp_offset;
+                        document.getElementById('cardHumOffset').innerText = state.hum_offset;
+                        document.getElementById('statusValue').innerText = (state.status === 0x00 ? 'OK' : 'Erro');
+
+                        if (tempData.length >= 10) {
+                            tempData.shift();
+                        }
+                        tempData.push(state.temp);
+                        tempChart.data.labels = tempData.map(() => "");
+                        tempChart.data.datasets[0].data = tempData;
+                        tempChart.update();
+
+                        if (humData.length >= 10) {
+                            humData.shift();
+                        }
+                        humData.push(state.hum);
+                        humChart.data.labels = humData.map(() => "");
+                        humChart.data.datasets[0].data = humData;
+                        humChart.update();
+
+                        if (altData.length >= 10) {
+                            altData.shift();
+                        }
+                        altData.push(state.alt);
+                        altChart.data.labels = altData.map(() => "");
+                        altChart.data.datasets[0].data = altData;
+                        altChart.update();
+                    });
+            }
+
+            setInterval(updateData, 3000);
+            window.onload = updateData;
+
+            document.getElementById("formTempLim").onsubmit = async function (e) {
+                e.preventDefault();
+                const min = document.getElementById("tempMin").value;
+                const max = document.getElementById("tempMax").value;
+                await fetch('/limits/temp', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `temp_min=${min}&temp_max=${max}`
+                });
+                updateData();
+            };
+
+            document.getElementById("formHumLim").onsubmit = async function (e) {
+                e.preventDefault();
+                const min = document.getElementById("humMin").value;
+                const max = document.getElementById("humMax").value;
+                await fetch('/limits/hum', {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `hum_min=${min}&hum_max=${max}`
+                });
+                updateData();
+            };
+
+            document.getElementById("formTempOffset").onsubmit = async function (e) {
+                e.preventDefault();
+                const offset = document.getElementById("tempOffset").value;
+                await fetch("/offset/temp", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `temp_offset=${offset}`
+                });
+                updateData();
+            };
+
+            document.getElementById("formHumOffset").onsubmit = async function (e) {
+                e.preventDefault();
+                const offset = document.getElementById("humOffset").value;
+                await fetch("/offset/hum", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: `hum_offset=${offset}`
+                });
+                updateData();
+            };
+        });
+    </script>
+</body>
+
+</html>
