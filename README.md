@@ -73,7 +73,7 @@ O sistema foi desenvolvido utilizando os sensores AHT20+BMP280 e a plataforma de
 2. */limits/temp*: requisição do tipo POST para atualizar os limites de operação de temperatura;
 3. */limits/hum*: requisição do tipo POST para atualizar os limites de operação de umidade;
 4. */offset/temp*: requisição do tipo POST para atualizar o offset de temperatura;
-5. */offset/temp*: requisição do tipo POST para atualizar o offset de umidade;
+5. */offset/hum*: requisição do tipo POST para atualizar o offset de umidade;
 
 
 </details>
