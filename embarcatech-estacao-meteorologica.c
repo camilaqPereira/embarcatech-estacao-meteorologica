@@ -1,5 +1,19 @@
+/**
+ * @file
+ * @brief Este arquivo contém a implementação principal do módulo.
+ *
+ * @details
+ * Este arquivo foi documentado inicialmente com o auxílio do GitHub Copilot,
+ * porém toda a documentação foi revisada manualmente para garantir precisão e clareza.
+ * O Copilot foi utilizado também para auxiliar na implementação da página HTML do servidor web da estação meteorológica.
+ * @author Camila Boa Morte
+ * @date 25 de Julho de 2025
+ */
+
 #include "embarcatech-estacao-meteorologica.h"
 
+
+/* Corpo HTML da página principal do servidor web da estação meteorológica */
 const char HTML_BODY[] =  "<!DOCTYPE html>\n"
     "<html lang=\"pt-br\">\n"
     "<head>\n"
@@ -265,6 +279,20 @@ const char HTML_BODY[] =  "<!DOCTYPE html>\n"
     "</html>\n";
 
 
+  
+/**
+ * @brief Função de callback chamada quando dados foram enviados com sucesso em uma conexão TCP.
+ *
+ * Esta função é chamada pela pilha TCP/IP quando os dados previamente enfileirados foram reconhecidos
+ * pelo host remoto. Pode ser utilizada para liberar recursos, enviar mais dados ou realizar outras ações
+ * após a transmissão dos dados.
+ *
+ * @param arg    Argumento definido pelo usuário passado para o callback (pode ser NULL).
+ * @param tpcb   Ponteiro para o bloco de controle do protocolo TCP associado à conexão.
+ * @param len    Número de bytes que foram reconhecidos como enviados.
+ *
+ * @return err_t Código de erro indicando o resultado da execução do callback.
+ */
 static err_t http_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
 {
     struct http_state *hs = (struct http_state *)arg;
@@ -277,6 +305,19 @@ static err_t http_sent(void *arg, struct tcp_pcb *tpcb, u16_t len)
     return ERR_OK;
 }
 
+/**
+ * @brief Função de callback para recebimento de dados HTTP via TCP.
+ *
+ * Esta função é chamada quando dados são recebidos em uma conexão TCP.
+ * Ela processa os dados recebidos no pbuf e lida com eventuais erros.
+ *
+ * @param arg    Ponteiro para argumento definido pelo usuário passado no registro do callback.
+ * @param tpcb   Ponteiro para o bloco de controle do protocolo TCP da conexão.
+ * @param p      Ponteiro para o pbuf (buffer de pacote) recebido contendo os dados.
+ * @param err    Código de erro indicando o status da operação de recebimento.
+ *
+ * @return err_t Retorna ERR_OK em caso de sucesso ou um código de erro lwIP apropriado em caso de falha.
+ */
 static err_t http_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err)
 {
     if (!p)
@@ -415,6 +456,18 @@ static err_t http_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
     return ERR_OK;
 }
 
+
+/**
+ * @brief Callback de conexão para uma nova conexão TCP.
+ *
+ * Esta função é chamada automaticamente quando uma nova conexão TCP é aceita.
+ *
+ * @param arg Ponteiro para argumentos definidos pelo usuário (pode ser NULL).
+ * @param newpcb Ponteiro para o novo bloco de controle de protocolo TCP (tcp_pcb) criado para a conexão aceita.
+ * @param err Código de erro indicando o status da aceitação da conexão.
+ *
+ * @return err_t Código de erro indicando o resultado do processamento do callback.
+ */
 static err_t connection_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
 {
 
@@ -422,6 +475,14 @@ static err_t connection_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
     return ERR_OK;
 }
 
+/**
+ * @brief Inicia o servidor HTTP.
+ *
+ * Esta função é responsável por configurar e iniciar o servidor HTTP,
+ * permitindo que ele comece a aceitar e processar requisições HTTP.
+ * Deve ser chamada durante a inicialização do sistema para habilitar
+ * a comunicação via protocolo HTTP.
+ */
 static void start_http_server(void)
 {
     struct tcp_pcb *pcb = tcp_new();
@@ -440,7 +501,14 @@ static void start_http_server(void)
     printf("Servidor HTTP rodando na porta 80...\n");
 }
 
-// Função para sinalizar uma tarefa a partir de uma ISR
+/**
+ * @brief Sinaliza uma tarefa a partir de uma interrupção.
+ *
+ * Esta função é usada para sinalizar uma tarefa a partir de uma interrupção,
+ * permitindo que a tarefa seja despertada imediatamente se necessário.
+ *
+ * @param xSemaphore O semáforo a ser sinalizado.
+ */
 void signal_task_from_isr(SemaphoreHandle_t xSemaphore)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;                // Variável para verificar se uma tarefa de maior prioridade foi despertada
@@ -448,7 +516,16 @@ void signal_task_from_isr(SemaphoreHandle_t xSemaphore)
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);                 // Se uma tarefa de maior prioridade foi despertada, realiza um yield para que ela possa ser executada imediatamente
 }
 
-// Função de tratamento de interrupção para os botões
+/**
+ * @brief Handler de interrupção do GPIO
+ *
+ * Esta função é chamada quando ocorre uma interrupção no GPIO associado ao botão A.
+ * Ela verifica se o tempo desde a última interrupção é maior que o tempo de debounce
+ * e, se for, sinaliza a tarefa responsável pela exibição de dados.
+ *
+ * @param gpio O número do GPIO que gerou a interrupção.
+ * @param events Os eventos que ocorreram (não utilizado neste caso).
+ */
 void gpio_irq_handler(uint gpio, uint32_t events)
 {
     uint32_t now = us_to_ms(get_absolute_time());
@@ -480,6 +557,15 @@ void vTaskTCPServer(){
 
 }
 
+/**
+ * @brief Tarefa responsável pela leitura periódica dos sensores e atualização dos dados da estação meteorológica.
+ *
+ * Esta tarefa lê os dados dos sensores BMP280 e AHT20, aplica offsets de temperatura e umidade,
+ * verifica os limites definidos para temperatura e umidade, e atualiza o estado do sistema.
+ * Os dados lidos são armazenados em uma estrutura global para serem acessados por outras partes do sistema.
+ *
+ * @param pvParameters Parâmetros passados para a tarefa (neste caso, parâmetros de calibração do BMP280).
+ */
 void vTaskSensorPolling(void *pvParameters) {
     int32_t raw_temp_bmp;
     int32_t raw_pressure;
@@ -521,7 +607,7 @@ void vTaskSensorPolling(void *pvParameters) {
         station_data.aht20_data.temperature += station_data.temp_offset;
         station_data.aht20_data.humidity += station_data.hum_offset;
 
-
+        /* ---------------------- Leirtura dos limites atuais da estação -------------------*/
         if (xSemaphoreTake(xStationLimitsMutex, portMAX_DELAY) == pdTRUE) {
             station_limits = station_limits_global; // Atualiza os limites da estação
             xSemaphoreGive(xStationLimitsMutex);
@@ -539,7 +625,8 @@ void vTaskSensorPolling(void *pvParameters) {
         } else {
             station_data.status &= ~0xF0;
         }
-              
+
+        /* ---------------------- Atualizando dados globais da estação -------------------*/
         if (xSemaphoreTake(xStationDataMutex, portMAX_DELAY) == pdTRUE) {
             station_data_global.temperature_bmp = station_data.temperature_bmp; // Atualiza os dados da estação meteorológica
             station_data_global.altitude = station_data.altitude;
@@ -558,6 +645,14 @@ void vTaskSensorPolling(void *pvParameters) {
     vTaskDelete(NULL); // Deleta a tarefa atual
 }
 
+/**
+ * @brief Tarefa responsável pela exibição dos dados da estação meteorológica.
+ *
+ * Esta tarefa é responsável por atualizar o display com os dados lidos dos sensores,
+ * alternando entre diferentes modos de visualização conforme necessário.
+ *
+ * @param pvParameters Parâmetros passados para a tarefa (neste caso, o ponteiro para o display SSD1306).
+ */
 void vTaskDisplay(void *pvParameters) {
     ssd1306_t *ssd = (ssd1306_t *)pvParameters;
 
@@ -654,6 +749,14 @@ void vTaskDisplay(void *pvParameters) {
     vTaskDelete(NULL); // Deleta a tarefa atual
 }
 
+/**
+ * @brief Tarefa responsável pela atualização do estado da matriz de LEDs e do led RGB
+ *
+ * Esta tarefa é responsável por receber o estado da estação meteorológica e atualizar a matriz de LEDs
+ * de acordo com o estado atual.
+ *
+ * @param pvParameters Parâmetros passados para a tarefa (neste caso, dados da matriz de LEDs).
+ */
 void vTaskLedMtx(void *pvParameters) {
     uint8_t station_status = 0;
 
@@ -715,7 +818,14 @@ void vTaskLedMtx(void *pvParameters) {
     }
 }
 
-
+/**
+ * @brief Tarefa responsável pela atualização dos parâmetros da estação meteorológica.
+ *
+ * Esta tarefa é responsável por receber os dados de atualização e aplicar as mudanças
+ * nos parâmetros da estação meteorológica, como limites de temperatura e umidade.
+ *
+ * @param pvParameters Parâmetros passados para a tarefa (neste caso, dados de atualização).
+ */
 void vTaskUpdateParam(void *pvParameters) {
     UpdateData_t update_data;
 
